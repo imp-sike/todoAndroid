@@ -7,11 +7,15 @@ import android.view.ViewGroup
 import android.widget.ImageButton
 import android.widget.TextView
 import android.widget.Toast
+import androidx.cardview.widget.CardView
 import androidx.recyclerview.widget.RecyclerView
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlin.coroutines.coroutineContext
 
 
-class CustomAdapter(private val dataSet: ArrayList<TodoModel>) :
+class CustomAdapter(private val dataSet: ArrayList<TodoModel>, private val todoDAO: TodoDAO) :
     RecyclerView.Adapter<CustomAdapter.ViewHolder>() {
 
     /**
@@ -21,11 +25,13 @@ class CustomAdapter(private val dataSet: ArrayList<TodoModel>) :
     class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
         val todoText: TextView
         val todoBtn: ImageButton
+        val cv: CardView
 
         init {
             // Define click listener for the ViewHolder's View.
             todoText = view.findViewById(R.id.infoOfTodo)
             todoBtn = view.findViewById(R.id.markAsDone)
+            cv = view.findViewById(R.id.cardView)
         }
     }
 
@@ -44,16 +50,22 @@ class CustomAdapter(private val dataSet: ArrayList<TodoModel>) :
         // Get element from your dataset at this position and replace the
         // contents of the view with that element
         viewHolder.todoText.text = dataSet[position].todoText
-        if(!dataSet[position].todoStatus) {
+        if(!dataSet[position].todoStatus!!) {
             viewHolder.todoBtn.setImageResource(R.drawable.ic_baseline_pending_24)
         } else {
             viewHolder.todoBtn.setImageResource(R.drawable.ic_baseline_done_24)
         }
         viewHolder.todoBtn.setOnClickListener{
             Toast.makeText(viewHolder.itemView.context, "Todo status changed!", Toast.LENGTH_SHORT).show()
-            dataSet[position].todoStatus = !dataSet[position].todoStatus
+            dataSet[position].todoStatus = !dataSet[position].todoStatus!!
+            CoroutineScope(Dispatchers.Default).launch {
+                todoDAO.insertTodo(TodoModel(dataSet[position].tid, dataSet[position].todoText, dataSet[position].todoStatus))
+            }
+
             notifyItemChanged(position)
         }
+
+
     }
 
     // Return the size of your dataset (invoked by the layout manager)
